@@ -1,20 +1,29 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
-import mysql.connector
-from mysql.connector import Error
+from supabase import create_client, Client
 from dotenv import load_dotenv
 import os
 
 
-# Load environment variables from backend/.env
+# Load .env
 load_dotenv()
 
 
 app = FastAPI()
 
 
-# Allow React frontend to communicate with FastAPI
+# Supabase configuration
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY")
+
+supabase: Client = create_client(
+    SUPABASE_URL,
+    SUPABASE_SECRET_KEY
+)
+
+
+# Allow React frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -27,35 +36,10 @@ app.add_middleware(
 )
 
 
-# MySQL configuration
-DB_CONFIG = {
-    "host": os.getenv("MYSQL_HOST", "localhost"),
-    "port": int(os.getenv("MYSQL_PORT", "3306")),
-    "user": os.getenv("MYSQL_USER", "root"),
-    "password": os.getenv("MYSQL_PASSWORD"),
-    "database": os.getenv("MYSQL_DATABASE", "portfolio_db"),
-}
-
-
-# Contact form data model
 class ContactMessage(BaseModel):
     name: str
     email: EmailStr
     message: str
-
-
-# MySQL connection
-def get_db_connection():
-    try:
-        connection = mysql.connector.connect(**DB_CONFIG)
-
-        if connection.is_connected():
-            return connection
-
-    except Error as error:
-        print("MySQL connection error:", error)
-
-    return None
 
 
 @app.get("/")
@@ -68,53 +52,45 @@ def home():
 @app.get("/api/health")
 def health_check():
 
-    connection = get_db_connection()
-
-    if connection:
-        connection.close()
+    try:
+        response = (
+            supabase
+            .table("contact_messages")
+            .select("id")
+            .limit(1)
+            .execute()
+        )
 
         return {
             "status": "success",
-            "message": "Backend and MySQL are healthy"
+            "message": "Backend and Supabase are healthy"
         }
 
-    return {
-        "status": "error",
-        "message": "Backend is running, but MySQL connection failed"
-    }
+    except Exception as error:
+
+        print("Supabase error:", error)
+
+        return {
+            "status": "error",
+            "message": "Supabase connection failed"
+        }
 
 
 @app.post("/api/contact")
 def receive_contact_message(data: ContactMessage):
 
-    connection = get_db_connection()
-
-    if connection is None:
-        return {
-            "status": "error",
-            "message": "Unable to connect to the database."
-        }
-
-    cursor = None
-
     try:
-        cursor = connection.cursor()
 
-        query = """
-            INSERT INTO contact_messages
-            (name, email, message)
-            VALUES (%s, %s, %s)
-        """
-
-        values = (
-            data.name,
-            data.email,
-            data.message,
+        response = (
+            supabase
+            .table("contact_messages")
+            .insert({
+                "name": data.name,
+                "email": str(data.email),
+                "message": data.message
+            })
+            .execute()
         )
-
-        cursor.execute(query, values)
-
-        connection.commit()
 
         print("New Contact Message Saved")
         print("-------------------------")
@@ -127,19 +103,11 @@ def receive_contact_message(data: ContactMessage):
             "message": "Your message has been received!"
         }
 
-    except Error as error:
+    except Exception as error:
 
-        print("Database error:", error)
+        print("Supabase database error:", error)
 
         return {
             "status": "error",
             "message": "Failed to save your message."
         }
-
-    finally:
-
-        if cursor:
-            cursor.close()
-
-        if connection.is_connected():
-            connection.close()
