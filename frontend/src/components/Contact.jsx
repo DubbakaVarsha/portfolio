@@ -29,7 +29,7 @@ function Contact() {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:8001/api/contact",
+        "https://portfolio-rv0y.onrender.com/api/contact",
         {
           method: "POST",
           headers: {
