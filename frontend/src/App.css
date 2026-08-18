@@ -686,3 +686,60 @@ body {
     justify-content: center;
   }
 }
+/* =========================
+   TEXT VISIBILITY FIX
+   ========================= */
+
+.about-section h2,
+.skills-section h2,
+.projects-section h2,
+.education-section h2,
+.contact-section h2 {
+  color: #ffffff;
+}
+
+.highlight-card h3,
+.skill-card h3,
+.project-card h3,
+.education-details h3,
+.contact-info h3 {
+  color: #ffffff;
+}
+
+.education-branch {
+  color: #cbd5e1;
+}
+
+.education-college {
+  color: #38bdf8;
+}
+
+.contact-item strong {
+  color: #38bdf8;
+}
+
+.form-group label {
+  color: #cbd5e1;
+}
+
+.project-description,
+.education-details p,
+.contact-intro {
+  color: #94a3b8;
+}
+
+.project-technologies span,
+.skill-card p {
+  color: #cbd5e1;
+}
+
+.footer-info h3,
+.footer-info p,
+.footer-links a,
+.footer-bottom p {
+  color: #cbd5e1;
+}
+
+.footer-info h3 {
+  color: #38bdf8;
+}
